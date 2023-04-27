@@ -21,11 +21,18 @@ public class TokenInterceptor implements HandlerInterceptor {
 //        排除的路径
 //        if(!servletPath.startsWith("/admin")) return true;
         String token = request.getHeader("Authorization");
+        if(token==null) {
+            ObjectMapper mapper = new ObjectMapper();
+            String mapJackson = mapper.writeValueAsString(new ResultUtil(HttpStatus.UNAUTHORIZED.value(),"token失效，请重新登录"));
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write(mapJackson);
+            return false;
+        }
         CurrentUser currentUser = TokenUtil.verify(token);
         if(token.equals("devToken")){
             CurrentUser user = new CurrentUser();
-            user.setUsername("devUser");
-            user.setUuid("0");
+            user.setUsername("admin");
+            user.setUuid("1");
             ThreadLocalUtil.set("currentUser",user);
             return true;
         }

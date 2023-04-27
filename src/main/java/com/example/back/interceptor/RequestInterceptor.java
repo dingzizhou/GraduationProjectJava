@@ -27,7 +27,7 @@ public class RequestInterceptor implements ResponseBodyAdvice<Object> {
     public Object beforeBodyWrite(Object body, MethodParameter returnType, MediaType selectedContentType, Class<? extends HttpMessageConverter<?>> selectedConverterType, ServerHttpRequest request, ServerHttpResponse response) {
         if(body instanceof ResultUtil){
             ResultUtil result = new ObjectMapper().convertValue(body,ResultUtil.class);
-            response.setStatusCode(HttpStatusCode.valueOf(result.getCode()));
+            response.setStatusCode(HttpStatusCode.valueOf(result.getStatus()));
             return result.getData();
         }
         return body;

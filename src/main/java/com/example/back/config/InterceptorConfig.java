@@ -17,16 +17,18 @@ public class InterceptorConfig implements WebMvcConfigurer {
     }
 
     public String[] include(){
-        System.out.println("进入addPathPatterns");
+        System.out.println("addPathPatterns");
         return new String[]{
                 "/**"
         };
     }
 
     public String[] exclude(){
-        System.out.println("进入excludePathPatterns");
+        System.out.println("excludePathPatterns");
         return new String[]{
-                "/login"
+                "/login",
+                "/video/**",
+                "/thumbnail/**"
         };
     }
 }
