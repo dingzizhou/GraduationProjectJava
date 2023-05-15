@@ -19,5 +19,9 @@ public interface FileService extends IService<FilePojo>  {
 
     ResultUtil mergeFile(FileInfoDTO fileInfoDTO);
 
+    ResultUtil renameFile(String uuid,String newName);
+
+    ResultUtil deleteFile(String uuid);
+
     String getFileRelativePath(String uuid);
 }

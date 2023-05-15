@@ -10,6 +10,7 @@ import com.example.back.model.pojo.FilePojo;
 import com.example.back.model.vo.FileInfoVO;
 import com.example.back.service.ChunkService;
 import com.example.back.service.FileService;
+import com.example.back.service.FileShareService;
 import com.example.back.util.ResultUtil;
 import com.example.back.util.ThreadLocalUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,11 +26,9 @@ import org.springframework.util.DigestUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -52,7 +51,8 @@ public class FileController {
     private FileService fileService;
     @Resource
     private ChunkService chunkService;
-
+    @Resource
+    private FileShareService fileShareService;
     /**
      * 根据父文件夹查找子文件
      * @param folder 父级目录的uuid
@@ -93,29 +93,31 @@ public class FileController {
     }
 
     /**
-     * 文件下载（未完成）
+     * 文件下载
      * @param response
      * @throws IOException
      */
     @CrossOrigin
     @GetMapping("/download")
-    public void download(@RequestParam("token") String token, @RequestParam("uuid") String uuid,HttpServletResponse response) throws IOException{
+    public void download(@RequestParam("token") String token, @RequestParam("uuid") String uuid,HttpServletResponse response){
         response.reset();
         ObjectMapper objectMapper = new ObjectMapper();
         CurrentUser currentUser = objectMapper.convertValue(ThreadLocalUtil.get("currentUser"),CurrentUser.class);
         String path = fileLocation+'/'+currentUser.getUuid()+fileService.getFileRelativePath(uuid);
-        InputStream inputStream = new FileInputStream(path);
-        response.reset();
-        response.setContentType("application/octet-stream");
-        String filename = new File(path).getName();
-        response.addHeader("Content-Disposition","attachment;filename="+ URLEncoder.encode(filename,"UTF-8"));
-        ServletOutputStream servletOutputStream = response.getOutputStream();
-        byte[] bytes = new byte[1024];
-        int len;
-        while((len=inputStream.read(bytes))>0){
-            servletOutputStream.write(bytes,0,len);
+        try (InputStream inputStream = new FileInputStream(path)) {
+            response.reset();
+            response.setContentType("application/octet-stream");
+            String filename = new File(path).getName();
+            response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(filename, StandardCharsets.UTF_8));
+            ServletOutputStream servletOutputStream = response.getOutputStream();
+            byte[] bytes = new byte[1024];
+            int len;
+            while ((len = inputStream.read(bytes)) > 0) {
+                servletOutputStream.write(bytes, 0, len);
+            }
+        } catch (IOException e) {
+            logger.error(e.getMessage(),e);
         }
-        inputStream.close();
     }
 
     /**
@@ -147,8 +149,27 @@ public class FileController {
     @PostMapping("/mergeFile")
     public ResultUtil mergeFile(FileInfoDTO fileInfoDTO){
 //        System.out.println("mergeFile:"+fileInfoDTO.toString());
-        fileService.mergeFile(fileInfoDTO);
-        return ResultUtil.ok();
+        return fileService.mergeFile(fileInfoDTO);
+//        return ResultUtil.ok();
+    }
+    @PostMapping("/shareFile")
+    public ResultUtil shareFile(String uuid,Integer time){
+        return fileShareService.shareFile(uuid, time);
+    }
+
+    @GetMapping("/getSharedFile")
+    public ResultUtil getSharedFile(String shareCode){
+        return fileShareService.getSharedFile(shareCode);
+    }
+
+    @PostMapping("/renameFile")
+    public ResultUtil renameFile(String uuid,String newName){
+        return fileService.renameFile(uuid, newName);
+    }
+
+    @PostMapping("/deleteFile")
+    public ResultUtil deleteFile(String uuid){
+        return fileService.deleteFile(uuid);
     }
 
     @GetMapping("/getFileMD5")

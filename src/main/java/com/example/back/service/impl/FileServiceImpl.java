@@ -171,6 +171,65 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FilePojo> implement
         return ResultUtil.ok();
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ResultUtil renameFile(String uuid, String newName) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        CurrentUser currentUser = objectMapper.convertValue(ThreadLocalUtil.get("currentUser"),CurrentUser.class);
+        String path = fileLocation+'/'+currentUser.getUuid()+getFileRelativePath(uuid);
+        String type = path.substring(path.indexOf(".")+1);
+        FilePojo filePojo = new FilePojo();
+        filePojo.setUuid(uuid);
+        filePojo.setFileName(newName+'.'+type);
+        try {
+            if(updateById(filePojo)){
+                File oldFile = new File(path);
+                String newPath = fileLocation+'/'+currentUser.getUuid()+getFileRelativePath(uuid);
+                File newFile = new File(newPath);
+                if(newFile.exists()){
+                    throw new Exception("文件名已经存在");
+                }
+                if(oldFile.renameTo(newFile)) {
+                    return ResultUtil.ok();
+                } else {
+                    throw new Exception("重命名文件失败");
+                }
+            }
+            else{
+                return ResultUtil.fail("");
+            }
+        }
+        catch (Exception e){
+            if(!e.getMessage().equals("文件名已经存在")){
+                logger.error(e.getMessage(),e);
+            }
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            return ResultUtil.fail(e.getMessage());
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ResultUtil deleteFile(String uuid) {
+        FilePojo filePojo = new FilePojo();
+        filePojo.setUuid(uuid);
+        filePojo.setFileDeleteTime(new Date());
+        filePojo.setFileStatus(0);
+        try {
+            if(updateById(filePojo)){
+                return ResultUtil.ok();
+            }
+            else{
+                return ResultUtil.fail("");
+            }
+        }
+        catch (Exception e){
+            logger.error(e.getMessage(),e);
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            return ResultUtil.fail(e.getMessage());
+        }
+    }
+
     public String getFileRelativePath(String uuid){
 //        List<String> res = fileMapper.getFileRelativePath(uuid);
 //        StringBuilder relativePath = new StringBuilder();

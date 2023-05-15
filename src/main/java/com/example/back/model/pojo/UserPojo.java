@@ -18,5 +18,8 @@ public class UserPojo {
     private String username;
     @TableField("password")
     private String password;
-
+    @TableField("type")
+    private Integer type;
+    @TableField("is_delete")
+    private Integer isDelete;
 }

@@ -7,6 +7,7 @@ import com.example.back.util.ResultUtil;
 import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -26,6 +27,26 @@ public class AdminController {
     @PostMapping("/createUser")
     public ResultUtil createUser(LoginFormDTO loginFormDTO){
         return userService.createUser(loginFormDTO);
+    }
+
+    /**
+     * 获取用户分页列表
+     * @param pageNum
+     * @param pageSize
+     * @return
+     */
+    @GetMapping("/listUser")
+    public ResultUtil listUser(Integer pageNum,Integer pageSize){
+        return userService.listUser(pageNum,pageSize);
+    }
+
+    /**
+     * 获取用户数量
+     * @return
+     */
+    @GetMapping("/getUserNumber")
+    public ResultUtil getUserNumber(){
+        return userService.getUserNumber();
     }
 
     /**

@@ -7,6 +7,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Date;
+
 @TableName("file_share")
 @Data
 @AllArgsConstructor
@@ -22,5 +24,5 @@ public class FileSharePojo {
     @TableField("validity")
     private Integer validity;
     @TableField("create_time")
-    private String createTime;
+    private Date createTime;
 }

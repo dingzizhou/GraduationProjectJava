@@ -27,10 +27,4 @@ public class LoginController {
         return userService.login(loginFormDTO);
     }
 
-    @GetMapping("/test")
-    public String test(){
-        CurrentUser currentUser = new ObjectMapper().convertValue(ThreadLocalUtil.get("currentUser"), CurrentUser.class);
-        return currentUser.toString();
-    }
-
 }
