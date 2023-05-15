@@ -1,8 +1,19 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.example.back.mapper.FileMapper">
-    <resultMap id="fileInfoVOMap" type="com.example.back.model.vo.FileInfoVO">
-        <id column="uuid" property="uuid"/>
-
-    </resultMap>
+    <select id="getFileRelativePath" resultType="String">
+        select file_name,level from
+            (
+                select
+                    uuid,
+                    (select @r := file.father_folder from file where uuid = @r) as _r,
+        @l := @l + 1 as level
+        from
+            file,
+            (select @r := #{uuid},@l := 0) vars
+            ) tempTable1
+            left join file on file.uuid = tempTable1.uuid
+        where _r is not null and _r != '' or file.uuid = #{uuid}
+        order by level
+    </select>
 </mapper>

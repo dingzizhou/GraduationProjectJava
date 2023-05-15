@@ -17,7 +17,7 @@ public class TokenUtil {
 
     public static String sign(UserPojo userPojo){
         try {
-            return JWT.create().withClaim("username", userPojo.getUsername()).withClaim("id", userPojo.getUuid()).sign(algorithm);
+            return JWT.create().withClaim("username", userPojo.getUsername()).withClaim("uuid", userPojo.getUuid()).sign(algorithm);
         }
         catch (JWTCreationException exception){
             return exception.getMessage();

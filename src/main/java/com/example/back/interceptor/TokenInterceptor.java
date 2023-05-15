@@ -17,15 +17,17 @@ public class TokenInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        String servletPath = request.getServletPath();
+//        String servletPath = request.getServletPath();
 //        排除的路径
 //        if(!servletPath.startsWith("/admin")) return true;
         String token = request.getHeader("Authorization");
+        if(token == null) token = request.getParameter("token");
         if(token==null) {
             ObjectMapper mapper = new ObjectMapper();
-            String mapJackson = mapper.writeValueAsString(new ResultUtil(HttpStatus.UNAUTHORIZED.value(),"token失效，请重新登录"));
+//            String mapJackson = mapper.writeValueAsString(new ResultUtil(HttpStatus.UNAUTHORIZED.value(),"token失效，请重新登录"));
             response.setContentType("application/json;charset=UTF-8");
-            response.getWriter().write(mapJackson);
+            response.setStatus(401);
+            response.getWriter().write("token失效，请重新登录");
             return false;
         }
         CurrentUser currentUser = TokenUtil.verify(token);
@@ -37,10 +39,11 @@ public class TokenInterceptor implements HandlerInterceptor {
             return true;
         }
         if(null == currentUser.getUuid()||null == currentUser.getUsername()){
-            ObjectMapper mapper = new ObjectMapper();
-            String mapJackson = mapper.writeValueAsString(new ResultUtil(HttpStatus.UNAUTHORIZED.value(),"token失效，请重新登录"));
+//            ObjectMapper mapper = new ObjectMapper();
+//            String mapJackson = mapper.writeValueAsString(new ResultUtil(HttpStatus.UNAUTHORIZED.value(),"token失效，请重新登录"));
             response.setContentType("application/json;charset=UTF-8");
-            response.getWriter().write(mapJackson);
+            response.setStatus(401);
+            response.getWriter().write("token失效，请重新登录");
             return false;
         }
         ThreadLocalUtil.set("currentUser",currentUser);

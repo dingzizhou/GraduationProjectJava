@@ -26,10 +26,6 @@ public class FileInfoVO {
      */
     private String fatherFolder;
     /**
-     * 相对路径
-     */
-    private String filePath;
-    /**
      * 文件大小
      */
     private String fileSize;
@@ -44,20 +40,16 @@ public class FileInfoVO {
     private Date updateTime;
 
     public FileInfoVO(File file){
-
         this.fileName = file.getName();
-        this.filePath = file.getPath();
         this.fileSize = convertFileSize(file.length());
         this.fileType = file.isDirectory() ? 1 : 0;
         this.updateTime = new Date(file.lastModified());
-
     }
 
     public FileInfoVO(FilePojo file){
         this.uuid = file.getUuid();
         this.fileName = file.getFileName();
         this.fatherFolder = file.getFatherFolder();
-        this.filePath = file.getFileURl();
         this.fileSize = convertFileSize(file.getFileSize());
         this.fileType = file.getIsFolder()==1 ? 1 : 0;
         this.updateTime = file.getFileUpdateTime();

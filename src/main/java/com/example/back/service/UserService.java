@@ -9,4 +9,9 @@ public interface UserService extends IService<UserPojo> {
 
     ResultUtil login(LoginFormDTO loginFormDTO);
 
+    ResultUtil createUser(LoginFormDTO loginFormDTO);
+
+    ResultUtil changePassword(String uuid,String password);
+
+    ResultUtil deleteUser(String uuid);
 }

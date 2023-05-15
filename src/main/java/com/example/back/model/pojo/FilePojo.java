@@ -23,8 +23,6 @@ public class FilePojo {
     private String fatherFolder;
     @TableField("file_name")
     private String fileName;
-    @TableField("file_url")
-    private String fileURl;
     @TableField("file_size")
     private Long fileSize;
     @TableField("is_folder")
