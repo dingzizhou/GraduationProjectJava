@@ -13,7 +13,6 @@ import com.example.back.service.FileService;
 import com.example.back.util.ResultUtil;
 import com.example.back.util.ThreadLocalUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,14 +22,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Stream;
 
 @Service
@@ -47,17 +43,36 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FilePojo> implement
     private FileMapper fileMapper;
 
     @Override
-    public List<FileInfoVO> getChildrenFilesByUuid(String fatherFolder) {
-        ObjectMapper objectMapper = new ObjectMapper();
-        CurrentUser currentUser = objectMapper.convertValue(ThreadLocalUtil.get("currentUser"),CurrentUser.class);
-        QueryWrapper<FilePojo> filePojoQueryWrapper = new QueryWrapper<>();
-        filePojoQueryWrapper.eq("father_folder",fatherFolder).ne("file_status",0).eq("file_owner",currentUser.getUuid());
-        List<FilePojo> filePojoList =list(filePojoQueryWrapper);
+    public ResultUtil getChildrenFiles(String path) {
         List<FileInfoVO> fileInfoVOList = new ArrayList<>();
-        for(FilePojo item : filePojoList){
-            fileInfoVOList.add(new FileInfoVO(item));
+        path = fileLocation+"/"+CurrentUser.getCurrentUser().getUuid()+path;
+        File file = new File(path);
+        if(!file.isDirectory()){
+            return ResultUtil.fail("该路径不是文件夹");
         }
-        return fileInfoVOList;
+        for(File item : file.listFiles()){
+            if(item.isHidden()) continue;
+            fileInfoVOList.add(new FileInfoVO(item,item.getPath().substring(fileLocation.length())));
+        }
+        return ResultUtil.ok(fileInfoVOList);
+    }
+
+    @Override
+    public ResultUtil goBack(String path) {
+        if(path.equals("")) return ResultUtil.notFound();
+        String basicPath = fileLocation + "/" + CurrentUser.getCurrentUser().getUuid();
+        path = basicPath+path;
+        File file = new File(path);
+        if(!file.exists()) return ResultUtil.fail("当前目录无效");
+        File parentFile = file.getParentFile();
+        if(parentFile==null) return ResultUtil.fail("找不到父文件夹");
+        String parentPath = parentFile.getPath().substring(basicPath.length());
+        ResultUtil res = getChildrenFiles(parentPath);
+        if(res.getStatus()!=200) return res;
+        Map<String, Object> resMap = new HashMap<>();
+        resMap.put("path",parentPath);
+        resMap.put("fileList",res.getData());
+        return ResultUtil.ok(resMap);
     }
 
     @Override
@@ -72,31 +87,31 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FilePojo> implement
     }
 
     @Override
+    public Boolean isFileExist(String path) {
+        File file = new File(path);
+        if(file.exists()){
+            return true;
+        }
+        else{
+            return false;
+        }
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public ResultUtil createFolder(CreateFolderDTO createFolderDTO) {
-        ObjectMapper objectMapper = new ObjectMapper();
-        CurrentUser currentUser = objectMapper.convertValue(ThreadLocalUtil.get("currentUser"),CurrentUser.class);
-        if(isFileExist(createFolderDTO.getCurrentFolder(), createFolderDTO.getFileName(),currentUser.getUuid())){
+        String path;
+        if(!createFolderDTO.getCurrentFolder().isEmpty()){
+            path = fileLocation+'/'+CurrentUser.getCurrentUser().getUuid()+createFolderDTO.getCurrentFolder()+'/'+createFolderDTO.getFileName();
+        }
+        else{
+            path = fileLocation+'/'+CurrentUser.getCurrentUser().getUuid()+'/'+createFolderDTO.getFileName();
+        }
+        if(isFileExist(path)){
             return ResultUtil.fail("存在重复的文件夹");
         }
 
         try{
-            FilePojo filePojo = new FilePojo();
-            filePojo.setUuid(IdUtil.getSnowflakeNextIdStr());
-            filePojo.setFileOwner(currentUser.getUuid());
-            filePojo.setFatherFolder(createFolderDTO.getCurrentFolder());
-            filePojo.setFileName(createFolderDTO.getFileName());
-            filePojo.setFileSize(0L);
-            filePojo.setIsFolder(1);
-            filePojo.setFileUpdateTime(new Date());
-            save(filePojo);
-            String path;
-            if(!createFolderDTO.getCurrentFolder().isEmpty()){
-                path = fileLocation+'/'+currentUser.getUuid()+getFileRelativePath(createFolderDTO.getCurrentFolder())+'/'+createFolderDTO.getFileName();
-            }
-            else{
-                path = fileLocation+'/'+currentUser.getUuid()+'/'+createFolderDTO.getFileName();
-            }
             File file = new File(path);
             if(file.mkdir()){
 
@@ -173,60 +188,40 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FilePojo> implement
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ResultUtil renameFile(String uuid, String newName) {
-        ObjectMapper objectMapper = new ObjectMapper();
-        CurrentUser currentUser = objectMapper.convertValue(ThreadLocalUtil.get("currentUser"),CurrentUser.class);
-        String path = fileLocation+'/'+currentUser.getUuid()+getFileRelativePath(uuid);
-        String type = path.substring(path.indexOf(".")+1);
-        FilePojo filePojo = new FilePojo();
-        filePojo.setUuid(uuid);
-        filePojo.setFileName(newName+'.'+type);
-        try {
-            if(updateById(filePojo)){
-                File oldFile = new File(path);
-                String newPath = fileLocation+'/'+currentUser.getUuid()+getFileRelativePath(uuid);
-                File newFile = new File(newPath);
-                if(newFile.exists()){
-                    throw new Exception("文件名已经存在");
-                }
-                if(oldFile.renameTo(newFile)) {
-                    return ResultUtil.ok();
-                } else {
-                    throw new Exception("重命名文件失败");
-                }
-            }
-            else{
-                return ResultUtil.fail("");
-            }
+    public ResultUtil renameFile(String filePath, String newName) {
+        String uuid = filePath.substring(filePath.indexOf("/",1),filePath.indexOf("/",2));
+        if(!uuid.equals(CurrentUser.getCurrentUser().getUuid())){
+            return ResultUtil.forbidden("不是你的文件");
         }
-        catch (Exception e){
-            if(!e.getMessage().equals("文件名已经存在")){
-                logger.error(e.getMessage(),e);
-            }
-            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
-            return ResultUtil.fail(e.getMessage());
+        String path = fileLocation + filePath;
+        String newPath = path.substring(0,path.lastIndexOf("/")) + newName;
+
+        File oldFile = new File(path);
+        File newFile = new File(newPath);
+        if(newFile.exists()){
+            return ResultUtil.fail("存在重复的文件夹名");
+        }
+        if(oldFile.renameTo(newFile)){
+            return ResultUtil.ok();
+        }
+        else {
+            return ResultUtil.fail("重命名文件名失败");
         }
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public ResultUtil deleteFile(String uuid) {
-        FilePojo filePojo = new FilePojo();
-        filePojo.setUuid(uuid);
-        filePojo.setFileDeleteTime(new Date());
-        filePojo.setFileStatus(0);
-        try {
-            if(updateById(filePojo)){
-                return ResultUtil.ok();
-            }
-            else{
-                return ResultUtil.fail("");
-            }
+    public ResultUtil deleteFile(String path) {
+        path = fileLocation + "/" + CurrentUser.getCurrentUser().getUuid() + path;
+        File file = new File(path);
+        if(!file.exists()){
+            return ResultUtil.notFound();
         }
-        catch (Exception e){
-            logger.error(e.getMessage(),e);
-            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
-            return ResultUtil.fail(e.getMessage());
+        if(file.delete()){
+            return ResultUtil.ok();
+        }
+        else {
+            logger.error("文件删除失败");
+            return ResultUtil.fail("");
         }
     }
 

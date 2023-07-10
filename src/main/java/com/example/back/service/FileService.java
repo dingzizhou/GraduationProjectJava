@@ -11,17 +11,21 @@ import java.util.List;
 
 public interface FileService extends IService<FilePojo>  {
 
-    List<FileInfoVO> getChildrenFilesByUuid(String fatherFolder);
+    ResultUtil getChildrenFiles(String path);
+
+    ResultUtil goBack(String path);
 
     Boolean isFileExist(String fatherFolderUuid,String fileName,String fileOwner);
+
+    Boolean isFileExist(String path);
 
     ResultUtil createFolder(CreateFolderDTO createFolderDTO);
 
     ResultUtil mergeFile(FileInfoDTO fileInfoDTO);
 
-    ResultUtil renameFile(String uuid,String newName);
+    ResultUtil renameFile(String filePath,String newName);
 
-    ResultUtil deleteFile(String uuid);
+    ResultUtil deleteFile(String path);
 
     String getFileRelativePath(String uuid);
 }

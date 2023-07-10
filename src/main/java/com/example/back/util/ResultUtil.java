@@ -32,4 +32,8 @@ public class ResultUtil {
     public static ResultUtil forbidden(){
         return new ResultUtil(HttpStatus.FORBIDDEN.value(), "");
     }
+
+    public static ResultUtil forbidden(String data){
+        return new ResultUtil(HttpStatus.FORBIDDEN.value(), data);
+    }
 }

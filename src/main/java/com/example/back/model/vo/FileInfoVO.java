@@ -16,15 +16,14 @@ import java.util.Date;
 @NoArgsConstructor
 public class FileInfoVO {
 
-    private String uuid;
     /**
      * 文件夹或文件名
      */
     private String fileName;
     /**
-     * 父文件夹uuid
+     * 文件相对路径
      */
-    private String fatherFolder;
+    private String filePath;
     /**
      * 文件大小
      */
@@ -39,20 +38,21 @@ public class FileInfoVO {
     @JsonFormat(pattern="yyyy-MM-dd HH:mm:ss")
     private Date updateTime;
 
-    public FileInfoVO(File file){
+    public FileInfoVO(File file,String filePath){
         this.fileName = file.getName();
+        this.filePath = filePath;
         this.fileSize = convertFileSize(file.length());
         this.fileType = file.isDirectory() ? 1 : 0;
         this.updateTime = new Date(file.lastModified());
     }
 
     public FileInfoVO(FilePojo file){
-        this.uuid = file.getUuid();
-        this.fileName = file.getFileName();
-        this.fatherFolder = file.getFatherFolder();
-        this.fileSize = convertFileSize(file.getFileSize());
-        this.fileType = file.getIsFolder()==1 ? 1 : 0;
-        this.updateTime = file.getFileUpdateTime();
+//        this.uuid = file.getUuid();
+//        this.fileName = file.getFileName();
+//        this.fatherFolder = file.getFatherFolder();
+//        this.fileSize = convertFileSize(file.getFileSize());
+//        this.fileType = file.getIsFolder()==1 ? 1 : 0;
+//        this.updateTime = file.getFileUpdateTime();
     }
 
     public String convertFileSize(long size)

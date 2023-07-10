@@ -33,10 +33,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Stream;
 
 @RestController
@@ -55,31 +52,22 @@ public class FileController {
     private FileShareService fileShareService;
     /**
      * 根据父文件夹查找子文件
-     * @param folder 父级目录的uuid
+     * @param path
      * @return
      */
-    @GetMapping("/getChildrenFilesByFolder")
-    public ResultUtil getChildrenFilesByUuid(@RequestParam("folder") String folder){
-        List<FileInfoVO> files = fileService.getChildrenFilesByUuid(folder);
-        return ResultUtil.ok(files);
+    @GetMapping("/getChildrenFiles")
+    public ResultUtil getChildrenFiles(@RequestParam("path") String path){
+        return fileService.getChildrenFiles(path);
     }
 
     /**
      * 根据当前目录获取上一级目录
-     * @param currentFolder 当前目录的uuid
+     * @param path
      * @return
      */
-    @GetMapping("/goBackByCurrentFolder")
-    public ResultUtil goBackByCurrentFolder(@RequestParam("currentFolder") String currentFolder){
-        FilePojo filePojo = fileService.getById(currentFolder);
-        if(filePojo == null){
-            return ResultUtil.notFound();
-        }
-        Map<String,Object> map = new HashMap<>();
-        List<FileInfoVO> fileInfoVOList = fileService.getChildrenFilesByUuid(filePojo.getFatherFolder());
-        map.put("fileList",fileInfoVOList);
-        map.put("folder",filePojo.getFatherFolder());
-        return ResultUtil.ok(map);
+    @GetMapping("/goBack")
+    public ResultUtil goBack(@RequestParam("path") String path){
+        return fileService.goBack(path);
     }
 
     /**
